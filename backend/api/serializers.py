@@ -101,12 +101,13 @@ class Base64ImageField(serializers.ImageField):
 
 class CreateRecipeSerializer(serializers.ModelSerializer):  #Переименовать в создание
     image = Base64ImageField(required=True)
-    tags = TagSerializer(read_only=True, many=True, allow_empty=False)
+    tags = TagSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
+    author = UserSerializer(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Recipe
-        fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time')
+        fields = ('ingredients', 'tags', 'author', 'image', 'name', 'text', 'cooking_time')
 
     def get_ingredients(self, obj):
         return obj.ingredients.values("id", "name", "measurement_unit", amount=F("recipeingredient__amount"))
@@ -139,7 +140,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):  #Переимено�
         for ingredient in ingredient_data:
             ingredient_lst.append(RecipeIngredient(recipe=recipe,
                                                     ingredients_id=ingredient[
-                                                        'ingredients'],
+                                                        'id'],
                                                     amount=ingredient[
                                                         'amount']))
         RecipeIngredient.objects.bulk_create(ingredient_lst)

@@ -6,6 +6,7 @@ class DefaultModel(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('id',)
 
 
 # class TimestampedModel(DefaultModel, Timestamped):

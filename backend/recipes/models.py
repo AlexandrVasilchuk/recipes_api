@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 
-from foodram_backend.models import DefaultModel
+from foodgram_backend.models import DefaultModel
 
 
 User = get_user_model()
@@ -28,6 +28,9 @@ class Ingredient(DefaultModel):
 
     def __str__(self) -> str:
         return f'{self.name} - измеряем в {self.measurement_unit}'
+
+    class Meta:
+        ordering = ('name', )
 
 
 class Recipe(DefaultModel):
