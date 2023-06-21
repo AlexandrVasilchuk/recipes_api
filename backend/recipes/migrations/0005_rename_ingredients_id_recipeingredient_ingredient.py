@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('recipes', '0004_rename_ingredient_recipeingredient_ingredients_id'),
     ]
