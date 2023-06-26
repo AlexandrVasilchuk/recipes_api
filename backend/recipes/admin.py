@@ -23,6 +23,7 @@ class RecipeTagAdminInline(admin.TabularInline):
 
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
+    min_num = 1
 
 
 @admin.register(Recipe)
@@ -44,7 +45,7 @@ class RecipesAdmin(BaseAdmin):
     inlines = (RecipeTagAdminInline, RecipeIngredientInline)
     list_filter = ('tags',)
 
-    def favorited_count(self, obj):
+    def favorited_count(self, obj: Recipe) -> int:
         return Favourite.objects.filter(recipes=obj).count()
 
     favorited_count.short_description = 'Раз в избранном'

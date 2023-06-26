@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from rest_framework import permissions, serializers, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView
 from rest_framework.request import Request
@@ -48,7 +48,7 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class IngredientsViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет для отображения ингредиентов"""
+    """Вьюсет для отображения ингредиентов."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -75,15 +75,16 @@ class RecipesViewSet(viewsets.ModelViewSet):
         user = request.user
         filename = 'shopping_list.txt'
         items = Ingredient.objects.filter(
-            recipeingredient__recipe__shopping_cart_recipes__owner=user.id
+            recipeingredient__recipe__shopping_cart_recipes__owner=user.id,
         ).annotate(amount=Sum('recipeingredient__amount'))
         simple_ingredient_list = [
-            f"{obj.name} ({obj.measurement_unit}) — {obj.amount}"
+            f'{obj.name} ({obj.measurement_unit}) — {obj.amount}'
             for obj in items
         ]
         content = '\n'.join(simple_ingredient_list)
         response = HttpResponse(
-            content, content_type='text.txt; charset=utf-8'
+            content,
+            content_type='text.txt; charset=utf-8',
         )
         response['Content-Disposition'] = f'attachment; filename={filename}'
         return response
@@ -125,7 +126,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
 
 class FollowViewSet(
-    ListAPIView, CreateAPIView, DestroyAPIView, GenericViewSet
+    ListAPIView,
+    CreateAPIView,
+    DestroyAPIView,
+    GenericViewSet,
 ):
     """Вьюсет для отображения/создания/удаления подписок."""
 
@@ -138,40 +142,36 @@ class FollowViewSet(
         return self.request.user.follower.all()
 
     def create(
-        selfself, request: Request, *args: tuple, **kwargs: dict
+        self,
+        request: Request,
+        *args: tuple,
+        **kwargs: dict,
     ) -> Response:
         follower = request.user
         author = get_object_or_404(User, id=kwargs.get('user_id'))
-        if (
-            follower != author
-            and not Follow.objects.filter(
-                author=author, follower=follower
-            ).exists()
-        ):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        follow_instance = follower.follower.filter(author=author)
+        if not follow_instance.exists():
             Follow.objects.create(author=author, follower=follower)
-            follow_instance = Follow.objects.get(
-                author=author, follower=follower
-            )
-            serializer = SubscriptionSerializer(
-                instance=follow_instance, context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(
-        self, request: Request, *args: tuple, **kwargs: dict
+        self,
+        request: Request,
+        *args: tuple,
+        **kwargs: dict,
     ) -> Response:
         follower = request.user
         author = get_object_or_404(User, id=kwargs.get('user_id'))
-        if Follow.objects.filter(author=author, follower=follower).exists():
-            Follow.objects.filter(author=author, follower=follower).delete()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        follow_instance = follower.follower.filter(author=author)
+        if follow_instance.exists():
+            follow_instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {'errors': 'Ошибка, вы не подписаны на этого автора!'},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class FavouriteView(CreateAPIView, DestroyAPIView, GenericViewSet):
@@ -180,37 +180,34 @@ class FavouriteView(CreateAPIView, DestroyAPIView, GenericViewSet):
     serializer_class = FavouriteSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    def perform_create(self, serializer: Serializer):
-        owner = self.request.user
-        recipe = get_object_or_404(Recipe, id=self.kwargs['recipe_id'])
-        if (
-            recipe
-            and not Favourite.objects.filter(
-                owner=owner, recipes=recipe
-            ).exists()
-        ):
-            serializer.save(owner=owner, recipes=recipe)
-        else:
-            raise serializers.ValidationError(
-                "Ошибка при добавлении в избранное"
-            )
-
     def delete(
-        self, request: Request, *args: tuple, **kwargs: dict
+        self,
+        request: Request,
+        *args: tuple,
+        **kwargs: dict,
     ) -> Response:
         owner = request.user
-        recipe = get_object_or_404(Recipe, id=self.kwargs['recipe_id'])
-        if Favourite.objects.filter(owner=owner, recipes=recipe).exists():
-            Favourite.objects.filter(owner=owner, recipes=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        recipe = get_object_or_404(Recipe, id=kwargs.get('recipe_id'))
+        serializer = self.get_serializer(
+            data={'owner': owner, 'recipes': recipe},
+        )
+        serializer.is_valid(raise_exception=True)
+        owner.owner.filter(recipes=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(
-        self, request: Request, *args: tuple, **kwargs: dict
+        self,
+        request: Request,
+        *args: tuple,
+        **kwargs: dict,
     ) -> Response:
-        serializer = self.get_serializer(data=request.data)
+        owner = request.user
+        recipe = get_object_or_404(Recipe, id=kwargs.get('recipe_id'))
+        serializer = self.get_serializer(
+            data={'owner': owner, 'recipes': recipe},
+        )
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        serializer.save(owner=owner, recipes=recipe)
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data['recipes'],
