@@ -16,12 +16,15 @@ router.register('recipes', RecipesViewSet)
 router.register('tags', TagsViewSet, basename='tags')
 router.register('ingredients', IngredientsViewSet, basename='ingredients')
 router.register(
-    r'users/(?P<user_id>\d+)/subscribe', FollowViewSet
-)  # Перенести в users/
-router.register('users/subscriptions', FollowViewSet)  # Перенести в users/
+    r'users/(?P<user_id>\d+)/subscribe',
+    FollowViewSet,
+)
+router.register('users/subscriptions', FollowViewSet)
 router.register('users', UserViewSet)
 router.register(
-    r'recipes/(?P<recipe_id>\d+)/favorite', FavouriteView, basename='favorites'
+    r'recipes/(?P<recipe_id>\d+)/favorite',
+    FavouriteView,
+    basename='favorites',
 )
 
 auth = [
