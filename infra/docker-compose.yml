@@ -15,9 +15,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: vskoico/foodgram_backend
     restart: always
     env_file: ./.env
     depends_on:
@@ -29,14 +27,12 @@ services:
       - "8000:8000"
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: vskoico/foodgram_frontend
     volumes:
       - ../frontend/:/app/result_build/
 
   nginx:
-    image: nginx:1.19.3
+    image: vskoico/foodgram_gateway
     ports:
       - "80:80"
     volumes:
