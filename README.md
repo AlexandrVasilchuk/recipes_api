@@ -1,6 +1,11 @@
 # Foodgram
 URL: https://vsko.sytes.net/  
 IP: 51.250.97.224
+
+Данные администратора:  
+username: root  
+email: root@gmail.com  
+password: admin  
 ---
 
 ## Описание проекта.
