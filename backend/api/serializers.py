@@ -2,8 +2,8 @@ import base64
 from collections import OrderedDict
 
 import webcolors
+from django.conf import settings
 from django.core.files.base import ContentFile
-from django.db.models import F, QuerySet
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
@@ -125,6 +125,10 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.StringRelatedField(
         source='ingredients.measurement_unit',
     )
+    amount = serializers.IntegerField(
+        min_value=settings.MIN_INTEGER_VALUE,
+        max_value=settings.MAX_INTEGER_VALUE,
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -135,12 +139,16 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     image = Base64ImageField(required=True)
     tags = TagSerializer(read_only=True, many=True)
     ingredients = RecipeIngredientSerializer(
-        source='ingredients_line', many=True,
+        source='ingredients_line',
+        many=True,
     )
     author = CustomUserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    cooking_time = serializers.IntegerField(min_value=0, max_value=32000)
+    cooking_time = serializers.IntegerField(
+        min_value=settings.MIN_INTEGER_VALUE,
+        max_value=settings.MAX_INTEGER_VALUE,
+    )
 
     class Meta:
         model = Recipe
@@ -170,14 +178,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             return obj.shopping_cart_recipes.filter(owner=owner).exists()
         return False
 
-    def get_ingredients(self, obj: Recipe) -> QuerySet:
-        return obj.ingredients.values(
-            'id',
-            'name',
-            'measurement_unit',
-            amount=F('recipeingredient__amount'),
-        )
-
     def validate(self, data: dict) -> dict:
         tags = self.initial_data.get('tags')
         if not tags:
@@ -190,7 +190,9 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         return data
 
     def ingredients_factory(
-        self, recipe: Recipe, ingredient_data: list,
+        self,
+        recipe: Recipe,
+        ingredient_data: list,
     ) -> None:
         """Функция для создания объектов промежуточной модели."""
         ingredient_lst = []
